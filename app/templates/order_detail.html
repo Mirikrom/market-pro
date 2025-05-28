@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block order_list_active %}active{% endblock %}
+{% block title %}Receipt Details{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h4>🧾 Receipt: {{ order.ordernumber }}</h4>
+  <p><strong>Date:</strong> {{ order.orderdate|date:"Y-m-d H:i" }}</p>
+  <p><strong>Operator:</strong> {{ order.orderoperator }}</p>
+  <p><strong>Client:</strong> {{ order.orderclient }}</p>
+
+  <table class="table table-bordered mt-3">
+    <thead class="table-secondary">
+      <tr>
+        <th>#</th>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Price</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ item.product.name }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ item.price|space_format }} so'm</td>
+        <td>{{ item.total|space_format }} so'm</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h5 class="mt-3 text-end">Umumiy summa: <span class="text-success">{{ order.ordertotalamount|space_format }}</span></h5>
+</div>
+{% endblock %}

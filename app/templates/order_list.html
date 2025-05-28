@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load custom_filters %}
+{% block title %}Receipts{% endblock %}
+{% block order_list_active %}active{% endblock %}
+{% block content %}
+
+<div class="container mt-4">
+  <h3>🧾 Receipts List</h3>
+  <table class="table table-bordered table-hover mt-3">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Number</th>
+        <th>Date</th>
+        <th>Total Amount</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ order.ordernumber }}</td>
+        <td>{{ order.orderdate|date:"Y-m-d H:i" }}</td>
+        <td>{{ order.ordertotalamount|space_format }}</td>
+        <td><a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-info">Ko‘rish</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

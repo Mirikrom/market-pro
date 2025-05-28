@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sales Checkout{% endblock %}
+{% block home_active %}active{% endblock %}
+
+{% block content %}
+<!-- Products JSON -->
+<script id="products-data" type="application/json">
+    {{ products|safe }}
+</script>
+
+<div id="app" class="row">
+    <!-- Product list (left) -->
+    <div class="col-md-8">
+        <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show" role="alert">
+            ${ errorMessage }
+            <button type="button" class="btn-close" @click="errorMessage = ''" aria-label="Close"></button>
+        </div>
+
+        <div class="mb-4">
+            <input type="text" v-model="searchQuery" class="form-control form-control-lg" placeholder="Search product...">
+        </div>
+
+        <table class="table table-hover table-bordered">
+            <thead class="table-primary">
+                <tr>
+                    <th>#</th>
+                    <th>Product Name</th>
+                    <th>Price</th>
+                    <th>Available</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(product, index) in searchProducts" :key="product.id">
+                    <td>${ index + 1 }</td>
+                    <td>${ product.name }</td>
+                    <td>${ product.latest_selling_price.toLocaleString('ru-RU') }</td>
+                    <td>${ product.total_quantity }</td>
+                    <td>
+                        <button @click="addToCart(product)" 
+                                class="btn btn-sm"
+                                :class="product.total_quantity > 0 ? 'btn-success' : 'btn-secondary'"
+                                :disabled="product.total_quantity <= 0">+</button>
+                        <button @click="removeFromCart(product)" class="btn btn-danger btn-sm">-</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Cart (right) -->
+    <div class="col-md-4">
+        <div class="card shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-body">
+                <h5 class="card-title text-primary mb-3">🛒 Cart (<span>${ cartItemCount }</span>)</h5>
+
+                <div v-if="cart.length === 0" class="text-center">
+                    <img src="{% static 'images/empty-cart.png' %}" alt="Empty cart" class="img-fluid" style="max-height: 180px;">
+                    <p class="text-muted mt-2">The cart is currently empty</p>
+                </div>
+
+                <div v-else>
+                    <table class="table table-sm table-hover table-bordered">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>#</th>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(item, index) in cart" :key="item.id">
+                                <td>${ index + 1 }</td>
+                                <td>${ item.name }</td>
+                                <td>${ item.quantity }</td>
+                                <td>${ (item.price * item.quantity).toLocaleString('ru-RU') }</td>
+                                <td>
+                                    <button @click="removeFromCart(item)" class="btn btn-danger btn-sm">-</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="text-center mt-4">
+                        <div class="display-3 fw-bold text-primary">${ cartTotal.toLocaleString('ru-RU') }</div>
+                    </div>
+
+                    <div class="mt-2" style="min-height: 42px">
+                        <div v-if="amountPaid > 0 && amountPaid < cartTotal" class="alert alert-danger py-1 px-2 mb-0">
+                          ❌ Short by 
+                          <strong>${ (cartTotal - amountPaid).toLocaleString('ru-RU') } UZS</strong>
+                        </div>
+                        <div v-else-if="amountPaid >= cartTotal && cart.length > 0" class="alert alert-info py-1 px-2 mb-0">
+                          🔄 Change: <strong>${ changeAmount.toLocaleString('ru-RU') } UZS</strong>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-grid gap-2">
+                        <div class="text-center">
+                            <label class="form-label">💵 Amount Paid (UZS):</label>
+                            <input type="text" class="form-control form-control-lg text-end mb-3" v-model="amountPaid" readonly />
+                          
+                            <div class="row row-cols-3 g-2">
+                              <div class="col" v-for="n in 9" :key="n">
+                                <button @click="appendDigit(n)" class="btn btn-outline-secondary w-100 py-2">${ n }</button>
+                              </div>
+                              <div class="col">
+                                <button @click="appendDigit(0)" class="btn btn-outline-secondary w-100 py-2">0</button>
+                              </div>
+                              <div class="col">
+                                <button @click="clearAmount" class="btn btn-warning w-100 py-2">🧹 Clear</button>
+                              </div>
+                              <div class="col">
+                                <button @click="removeLastDigit" class="btn btn-danger w-100 py-2">⌫ Back</button>
+                              </div>
+                            </div>
+                        </div>
+
+                        <button @click="showConfirmModal" class="btn btn-primary btn-lg">
+                            💳 Checkout
+                        </button>
+                        <button @click="clearCart" class="btn btn-outline-danger">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="modal fade" id="saleConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content p-3" style="font-family: monospace; font-size: 13px;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title w-100 text-center"></h5>
+                </div>
+                <div class="modal-body" id="checkContent">
+                    <p class="text-center mb-2">🧾 MarketPro</p>
+                    <hr class="my-2">
+                    <table class="table table-sm table-borderless mb-2">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top">
+                            <tr v-for="(item, index) in cart" :key="item.id" style="border-top: 1px dashed #ccc;">
+                                <td>${ index + 1 }</td>
+                                <td>${ item.name }</td>
+                                <td>${ item.quantity }</td>
+                                <td>${ (item.price * item.quantity).toLocaleString('ru-RU') }</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <hr class="my-2">
+                    <p class="text-end mb-1"><strong>Total:</strong> ${ cartTotal.toLocaleString('ru-RU') }</p>
+                    <p class="text-center text-muted small mt-2">Thank you for your purchase!</p>
+                </div>
+                <div class="modal-footer justify-content-between pt-0 border-0">
+                    <button class="btn btn-outline-secondary btn-sm" @click="clearCartModal" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-success btn-sm" @click="checkout">✅ Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/app.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Product{% endblock %}
+
+{% block add_product_active %}active{% endblock %}
+
+{% block page_title %}Add Product{% endblock %}
+
+{% block content %}
+    <form method="GET" action="{% url 'add_product' %}">
+        <div class="mb-3">
+            <label for="product_name" class="form-label">Product Name</label>
+            <div class="form-inline">
+                <select class="form-control" id="product_name" name="product_id" onchange="this.form.submit()">
+                    <option value="">Select a product</option>
+                    {% for product in products %}
+                        <option value="{{ product.id }}"
+                                {% if product.id|stringformat:"s" == selected_product_id %}selected{% endif %}>
+                            {{ product.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-success btn-sm rounded-pill d-flex align-items-center gap-2" type="button" data-bs-toggle="modal"
+                data-bs-target="#newProductModal" >
+                    <i class="fa-solid fa-plus"></i> Add New Product
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <form id="add-product-form" method="post" action="{{ add_product_url }}">
+        {% csrf_token %}
+        <!-- Mavjud forma maydonlari -->
+        <div class="mb-3">
+            <label for="unit" class="form-label">Unit</label>
+            <div class="d-flex align-items-center">
+                <div class="position-relative flex-grow-1 me-2">
+                    <select class="form-control pe-5" id="unit" name="unit" required>
+                        <option value="">Select a unit</option>
+                        {% for unit in units %}
+                            <option value="{{ unit.id }}">{{ unit.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <i class="fa-solid fa-chevron-down position-absolute" style="top: 50%; right: 1rem; transform: translateY(-50%); pointer-events: none;"></i>
+                </div>
+                <button class="btn btn-success btn-sm rounded-pill d-flex align-items-center gap-2" type="button" onclick="openAddUnitModal()">
+                    <i class="fa-solid fa-plus"></i> Add Unit
+                </button>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="quantity" class="form-label">Quantity</label>
+            <input type="number" class="form-control" id="miqdori" name="quantity" step="0.01" required>
+        </div>
+        <div class="mb-3">
+            <label for="purchase_price" class="form-label">Purchase Price</label>
+            <input type="number" class="form-control" id="kirish_narxi" name="purchase_price" step="0.01" required>
+        </div>
+        <div class="mb-3">
+            <label for="selling_price" class="form-label">Selling Price</label>
+            <input type="number" class="form-control" id="sotish_narxi" name="selling_price" step="0.01" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Product</button>
+        <a href='{% url 'home' %}' class="btn btn-secondary">Back to Home</a>
+    </form>
+
+    <!-- Modal -->
+    <div class="modal fade" id="newProductModal" tabindex="-1" aria-labelledby="newProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newProductModalLabel">Add New Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="cancelModalFlow()"></button>
+                </div>
+                <form method="post" action="{% url 'add_product' %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="new_product_name" class="form-label">Product Name</label>
+                            <input type="text" class="form-control" id="new_product_name" name="new_product_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="base_unit" class="form-label">Base Unit</label>
+                            <div class="input-group">
+                                <select class="form-control" id="base_unit" name="base_unit" required>
+                                    <option value="">Select a unit</option>
+                                    {% for unit in units_is_base %}
+                                        <option value="{{ unit.id }}">{{ unit.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        onclick="cancelModalFlow()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- 2nd Modal -->
+    <div class="modal fade" id="addUnitModal" tabindex="-1" aria-labelledby="addUnitModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+        <form method="post" action="{% url 'add_unit' %}">
+            {% csrf_token %}
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addUnitModalLabel">Add New Unit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                    onclick="cancelModalFlow()"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control" name="new_unit_name" placeholder="New unit name..." required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                    onclick="cancelModalFlow()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+            </div>
+        </form>
+        </div>
+    </div>
+    <script>
+        let openUnitModalNext = false; // Bu flag — qachon ikkinchi modal ochilishini bildiradi
+
+        function blurOnModalClose() {
+            document.activeElement?.blur();
+        }
+
+        function openAddUnitModal() {
+            document.activeElement?.blur();
+
+            openUnitModalNext = true; // Modal ochilishi kerak deb belgilaymiz
+
+            const productModalEl = document.getElementById('newProductModal');
+            const productModal = bootstrap.Modal.getInstance(productModalEl) || new bootstrap.Modal(productModalEl);
+            productModal.hide();
+
+            setTimeout(() => {
+                if (openUnitModalNext) {
+                    const unitModalEl = document.getElementById('addUnitModal');
+                    const addUnitModal = new bootstrap.Modal(unitModalEl);
+                    addUnitModal.show();
+                }
+            }, 400);
+        }
+
+        // Agar user o'z ixtiyori bilan modalni yopsa, ochmaslik kerak:
+        function cancelModalFlow() {
+            openUnitModalNext = false; // Modal ochilmasin
+            blurOnModalClose();
+        }
+
+            document.addEventListener("DOMContentLoaded", function () {
+            const modals = document.querySelectorAll('.modal');
+
+            modals.forEach(modalEl => {
+                modalEl.addEventListener('hidden.bs.modal', function () {
+                setTimeout(() => {
+                    // 🔥 Fokusni modalning o‘zidan olib tashlab body'ga o‘tkazamiz
+                    if (document.activeElement === modalEl) {
+                    document.body.focus();
+                    } else {
+                    document.activeElement?.blur();
+                    }
+                }, 100);
+                });
+            });
+
+            // Body fokuslanadigan bo‘lishi uchun tabindex qo‘shamiz
+            document.body.setAttribute('tabindex', '-1');
+            });
+    </script>
+{% endblock %}

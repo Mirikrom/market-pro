@@ -1,0 +1,43 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: marketpro_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: marketpro_db
+      MYSQL_ROOT_PASSWORD: 123
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  web:
+    build:
+      context: .
+    container_name: marketpro_web
+    volumes:
+      - ./app:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_NAME=marketpro_db
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=123
+      - DATABASE_HOST=db
+      - DATABASE_PORT=3306
+    command: >
+      sh -c "
+        if [ ! -f manage.py ]; then
+          django-admin startproject marketpro .;
+        fi &&
+        python manage.py migrate &&
+        exec python manage.py runserver 0.0.0.0:8000
+      "
+
+
+volumes:
+  db_data:
