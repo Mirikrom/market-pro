@@ -67,17 +67,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'MarketPro.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'marketpro_db',
         'USER': 'root',
-        'PASSWORD': '123',  # Add your MySQL password here
-        'HOST': 'db',  # Or the IP address of your MySQL server
-        'PORT': '3306',  # Default MySQL port
+        'PASSWORD': '123', 
+        'HOST': 'db',  
+        'PORT': '3306',  
     }
 }
 
